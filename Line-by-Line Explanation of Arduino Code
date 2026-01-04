@@ -1,0 +1,274 @@
+Line-by-Line Explanation of Arduino Code
+________________
+
+
+1. Header Files
+#include <Wire.h>
+#include <LiquidCrystal_I2C.h>
+#include <math.h>
+
+
+* Wire.h enables I²C communication, required for MPU6050 and LCD.
+* LiquidCrystal_I2C.h allows control of the 16×2 LCD using I²C.
+* math.h provides mathematical functions such as atan2() and sqrt() used in angle calculation.
+________________
+
+
+2. LCD Object Declaration
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+
+
+* Creates an LCD object with:
+   * I²C address 0x27
+   * 16 columns and 2 rows
+* This object is later used to print values on the display.
+________________
+
+
+3. MPU6050 Address Definition
+const int MPU_ADDR = 0x68;
+
+
+* Defines the I²C address of the MPU6050 sensor.
+* Used during communication over the I²C bus.
+________________
+
+
+4. Raw Sensor Data Variables
+int16_t accX, accY, accZ;
+
+
+* Stores raw acceleration data from the MPU6050.
+* Values are later used to calculate pitch angle.
+________________
+
+
+5. Calibration Offset Variables
+float pitch_offset = 0.0;
+float height_offset_cm = 0.0;
+
+
+* Store baseline values obtained during calibration.
+* All future measurements are taken relative to these offsets.
+________________
+
+
+6. Filtered Sensor Values
+float pitch_filt = 0.0;
+float height_filt = 0.0;
+
+
+* Used to store filtered values of pitch and height.
+* Filtering removes vibration noise.
+________________
+
+
+7. Ultrasonic Sensor Pin Definitions
+const int trigPin = 9;
+const int echoPin = 8;
+
+
+* trigPin sends ultrasonic pulse.
+* echoPin receives reflected pulse.
+________________
+
+
+8. Timing Control Variables
+const unsigned long SAMPLE_INTERVAL_MS = 100;
+unsigned long lastSampleTime = 0;
+unsigned long startTime = 0;
+
+
+* Ensures sensor readings are taken at fixed intervals.
+* Prevents unstable or irregular sampling.
+________________
+
+
+9. Flatness Index Parameters
+const float PITCH_FLAT_TOL_DEG = 2.0;
+const float HEIGHT_FLAT_TOL_CM = 0.4;
+
+
+* Define tolerance limits.
+* Deviations within these limits are considered flat.
+const float W_PITCH = 1.0;
+const float W_HEIGHT = 4.0;
+
+
+* Weighting factors.
+* Height variation contributes more to FI than pitch.
+const float FI_DROP_SCALE = 6.0;
+const float FI_MIN = 15.0;
+
+
+* Controls how quickly FI reduces.
+* Prevents FI from dropping unrealistically to zero.
+________________
+
+
+10. MPU6050 Write Function
+void mpuWriteByte(uint8_t reg, uint8_t data)
+
+
+* Writes data to a specific register of the MPU6050.
+* Used to wake the sensor from sleep mode.
+________________
+
+
+11. MPU6050 Read Function
+void readMPU()
+
+
+* Requests acceleration data from MPU6050 registers.
+* Combines high and low bytes to form 16-bit values.
+________________
+
+
+12. Pitch Calculation
+float computePitchDeg()
+
+
+* Uses accelerometer data to compute pitch angle.
+* atan2() ensures correct angle calculation.
+* Converts radians to degrees.
+________________
+
+
+13. Ultrasonic Distance Measurement
+float readUltrasonic_cm()
+
+
+* Sends a 10µs trigger pulse.
+* Measures echo duration using pulseIn().
+* Converts time into distance using speed of sound.
+* Returns distance in centimeters.
+________________
+
+
+14. Setup Function
+void setup()
+
+
+Inside setup():
+Serial.begin(115200);
+Wire.begin();
+
+
+* Initializes serial communication for data logging.
+* Starts I²C communication.
+mpuWriteByte(0x6B, 0x00);
+
+
+* Wakes up the MPU6050 from sleep mode.
+pinMode(trigPin, OUTPUT);
+pinMode(echoPin, INPUT);
+
+
+* Configures ultrasonic sensor pins.
+lcd.init();
+lcd.backlight();
+
+
+* Initializes LCD and turns on backlight.
+________________
+
+
+15. Calibration Routine
+for (int i = 0; i < CAL_SAMPLES; i++)
+
+
+* Collects multiple samples on flat surface.
+* Computes average pitch and height.
+* Stores values as baseline offsets.
+This step ensures accuracy and repeatability.
+________________
+
+
+16. Loop Function
+void loop()
+
+
+Timing Check
+if (now - lastSampleTime >= SAMPLE_INTERVAL_MS)
+
+
+* Ensures fixed sampling rate.
+________________
+
+
+17. Sensor Reading
+readMPU();
+float pitch_raw = computePitchDeg();
+float height_raw_cm = readUltrasonic_cm();
+
+
+* Reads IMU and ultrasonic data.
+float pitch_dev = pitch_raw - pitch_offset;
+float height_dev = height_raw_cm - height_offset_cm;
+
+
+* Computes deviation from calibrated flat surface.
+________________
+
+
+18. Noise Filtering
+pitch_filt = pitch_filt + α * (pitch_dev - pitch_filt);
+height_filt = height_filt + α * (height_dev - height_filt);
+
+
+* Applies exponential smoothing.
+* Removes vibration noise.
+________________
+
+
+19. Flatness Index Calculation
+if (absP <= tolerance && absH <= tolerance)
+
+
+* If deviations are small → FI = 100.
+score = weighted deviation;
+FI = 100 - score × scale;
+
+
+* Larger deviations reduce FI.
+* FI is constrained between 0 and 100.
+________________
+
+
+20. Serial Output
+Serial.print(time);
+Serial.print(pitch);
+Serial.print(height);
+Serial.println(FI);
+
+
+* Sends data in CSV format.
+* Used for Python logging and plotting.
+________________
+
+
+21. LCD Display Output
+lcd.setCursor();
+lcd.print(FI);
+
+
+* Displays Flatness Index in real time.
+* Allows instant visual feedback.
+________________
+
+
+22. Program Loop Continuation
+* Loop repeats continuously.
+* System updates FI in real time as surface changes.
+________________
+
+
+23. Summary
+* Each section of the code handles a specific task:
+   * Sensor interfacing
+   * Calibration
+   * Noise filtering
+   * Flatness calculation
+   * Output and logging
+* The modular structure improves readability and reliability.
+________________
