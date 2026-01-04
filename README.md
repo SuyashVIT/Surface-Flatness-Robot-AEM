@@ -22,13 +22,6 @@ using an ultrasonic sensor and MPU6050 IMU.
 - Arduino IDE
 - Python (Matplotlib, PySerial)
 
-## Repository Structure
-- Arduino/ : Embedded code
-- Python/ : Data logging and plotting
-- Diagrams/ : Circuit and architecture diagrams
-- Results/ : Sample outputs
-- Report/ : Final documentation
-
 ## How to Run
 1. Upload Arduino code to UNO
 2. Connect Arduino via USB
