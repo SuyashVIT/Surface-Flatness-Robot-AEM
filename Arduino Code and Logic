@@ -1,0 +1,158 @@
+Explanation of Arduino Code Used in the Project
+1. Introduction
+The Arduino program plays a crucial role in the implementation of the surface flatness measurement system. It is responsible for interfacing with sensors, acquiring real-time data, processing the sensor values, calculating the Flatness Index (FI), displaying results, and transmitting data to a computer for logging and analysis.
+The code is designed to ensure stable operation, accurate measurements, and immunity to noise caused by vibrations during movement on flat surfaces.
+________________
+
+
+2. Libraries Used
+The following libraries are used in the Arduino program:
+* Wire.h
+ Used for I²C communication between the Arduino, MPU6050 IMU, and LCD display.
+
+* LiquidCrystal_I2C.h
+ Used to control the 16×2 LCD module using the I²C protocol.
+
+These libraries simplify communication with peripheral devices and reduce low-level coding complexity.
+________________
+
+
+3. Variable Declaration and Initialization
+The program begins by declaring global variables required for:
+   * Storing raw sensor data from the MPU6050
+
+   * Storing calibration offsets for pitch and height
+
+   * Holding filtered sensor values
+
+   * Defining pin connections for the ultrasonic sensor
+
+   * Defining constants related to sampling time and filtering
+
+These variables allow the program to maintain state information and ensure consistent processing throughout execution.
+________________
+
+
+4. Sensor Initialization
+4.1 MPU6050 Initialization
+The MPU6050 sensor is initialized using I²C communication. The program writes to the power management register of the MPU6050 to wake it from sleep mode. Once initialized, the accelerometer readings are used to compute pitch angles.
+4.2 Ultrasonic Sensor Initialization
+The ultrasonic sensor pins are configured as:
+      * Trigger pin → Output
+
+      * Echo pin → Input
+
+This configuration allows the Arduino to send ultrasonic pulses and measure the return echo time to calculate distance.
+________________
+
+
+5. Calibration Routine
+At startup, the system performs a calibration routine on a flat surface. During this phase:
+         * Multiple readings from the ultrasonic sensor and IMU are collected.
+
+         * Average height and pitch values are calculated.
+
+         * These values are stored as reference offsets.
+
+Calibration ensures that all future measurements are relative to a known flat condition, improving accuracy and repeatability.
+________________
+
+
+6. Sensor Data Acquisition
+During the main loop:
+            * The ultrasonic sensor measures the time taken for the echo to return.
+
+            * This time is converted into distance using the speed of sound.
+
+            * The MPU6050 provides accelerometer data, which is used to calculate pitch angle.
+
+These readings are continuously acquired at fixed time intervals to maintain consistency.
+________________
+
+
+7. Noise Filtering and Signal Conditioning
+Raw sensor data often contains noise due to surface vibrations and movement. To address this:
+               * A low-pass filtering technique (exponential smoothing) is applied.
+
+               * Sudden spikes and high-frequency noise are suppressed.
+
+               * Filtered values represent meaningful physical changes rather than random fluctuations.
+
+This ensures that the Flatness Index remains stable on flat surfaces even during motion.
+________________
+
+
+8. Flatness Index Calculation
+The Flatness Index (FI) is calculated using filtered height and pitch deviations:
+                  * Small deviations within tolerance limits are treated as flat conditions.
+
+                  * Larger deviations reduce the FI proportionally.
+
+The algorithm ensures:
+                     * FI remains close to 100 on flat surfaces.
+
+                     * FI decreases when the system encounters bumps or uneven regions.
+
+                     * FI recovers quickly once the surface becomes flat again.
+
+The final FI value is constrained between 0 and 100 for easy interpretation.
+________________
+
+
+9. Output Display
+The calculated Flatness Index is displayed on a 16×2 LCD. The LCD shows:
+                        * Current FI value
+
+                        * Height deviation information
+
+This provides immediate visual feedback without requiring external devices.
+________________
+
+
+10. Serial Communication and Data Logging
+The Arduino transmits sensor readings and FI values to a computer via USB serial communication. The data is formatted in CSV (Comma Separated Values) format, making it suitable for:
+                           * Real-time plotting
+
+                           * Storage in files
+
+                           * Offline analysis using Python or spreadsheet software
+
+This feature enables detailed performance evaluation of the system.
+________________
+
+
+11. Timing and Control
+The program uses time-based control to ensure:
+                              * Fixed sampling intervals
+
+                              * Stable data acquisition
+
+                              * Predictable system behavior
+
+The use of non-blocking timing logic improves reliability and responsiveness.
+________________
+
+
+12. Overall Program Flow
+                                 1. Initialize sensors, LCD, and communication protocols
+
+                                 2. Perform calibration on a flat surface
+
+                                 3. Enter continuous loop
+
+                                 4. Acquire sensor data
+
+                                 5. Filter noise
+
+                                 6. Calculate Flatness Index
+
+                                 7. Display results
+
+                                 8. Transmit data for logging
+
+This cycle repeats continuously during system operation.
+________________
+
+
+13. Conclusion
+The Arduino program effectively integrates sensor interfacing, data processing, and output generation to achieve reliable surface flatness measurement. The use of calibration, filtering, and structured computation ensures accurate and stable results. The program is optimized for real-time operation and forms the core intelligence of the proposed system.
